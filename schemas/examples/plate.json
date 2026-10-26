@@ -1,0 +1,36 @@
+{
+  "model": "C:/…/Плита опорная.m3d",
+  "cdw": "C:/…/КД/Плита.cdw",
+  "format": 3, "vertical": false, "scale": "1:15",
+  "views": [
+    {"key": "main", "orient": "#Сверху", "x": 190, "y": 155, "rotate": 90},
+    {"key": "А", "type": "detail", "from": "main", "center": [1200.56, 0], "form": "rect", "w": 420, "h": 420,
+     "scale": "1:5", "x": 120, "y": 170, "sheet": 2, "title_prefix": "2 места"},
+    {"key": "Б", "type": "detail", "from": "main", "center": [0, 0], "form": "rect", "w": 1750, "h": 800,
+     "scale": "1:15", "x": 300, "y": 170, "sheet": 2}
+  ],
+  "dims": [
+    {"view": "main", "id": "L", "kind": "lin", "side": "top", "round": true,
+     "ref": {"type": "points", "p1": [-1479.56, 1150, 8], "p2": [1479.56, 1150, 8]}},
+    {"view": "main", "id": "W", "kind": "lin", "side": "left",
+     "ref": {"type": "points", "p1": [-1479.56, -1150, 8], "p2": [-1479.56, 1150, 8]}},
+    {"view": "main", "id": "X279", "kind": "lin", "side": "bottom", "frame": true,
+     "ref": {"type": "points", "p1": [1479.56, 0, 8], "p2": [1200.56, 0, 8]}},
+    {"view": "main", "id": "SQ", "kind": "lin", "side": "bottom", "square": true, "frame": true, "text": "1127,3",
+     "ref": {"type": "points", "p1": [-563.617, -563.653, 8], "p2": [563.617, -563.653, 8]}},
+    {"view": "А", "id": "PCD", "kind": "dia", "angle": 225, "tol": {"value": "1"},
+     "ref": {"type": "pcd", "center": [1200.56, 0, 8], "d": 121,
+             "rays": [[1243.34, 42.78, 8], [1216.219, 58.439, 8], [1157.78, 42.78, 8]]}},
+    {"view": "А", "id": "A45", "kind": "ang", "frame": true, "ref": {"type": "rays", "pcd": "PCD", "i1": 0, "i2": 2}},
+    {"view": "А", "id": "A30", "kind": "ang", "frame": true, "radius": 24, "ref": {"type": "rays", "pcd": "PCD", "i1": 0, "i2": 1}},
+    {"view": "А", "id": "D12", "kind": "dia", "prefix": "8 отв.", "tol": {"sign": "pos", "value": "0,5"},
+     "ref": {"type": "circle", "center": [1243.34, 42.78, 8], "d": 12}},
+    {"view": "Б", "id": "D700", "kind": "dia", "tol": {"value": "2"},
+     "ref": {"type": "circle", "center": [0, 0, 8], "d": 700}}
+  ],
+  "leaders": [{"view": "main", "at": [-1300, 1000, 8], "text": "s8", "arrow": "dot"}],
+  "tt": ["1 Общие допуски по ГОСТ 30893.1-m", "2 Острые кромки притупить фаской не более 0,5 мм."],
+  "ra": null,
+  "stamp": {"marking": "ACME.100.04.00.001", "name": "Плита основания", "material": "Сталь 40 ГОСТ 1050-2013",
+            "company": "Acme Engineering", "first_use": "ACME.100.04.00.000 СБ"}
+}

@@ -1,0 +1,17 @@
+[project]
+name = "kompas3d-mcp"
+version = "0.1.0"
+description = "MCP server that drives KOMPAS-3D through its COM API"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.2,<2",
+    "pywin32>=306; sys_platform == 'win32'",
+    "Pillow>=10",
+    "numpy>=1.26",
+    "jsonschema>=4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

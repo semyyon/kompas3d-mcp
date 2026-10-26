@@ -1,0 +1,36 @@
+{
+  "model": "<АБС_ПУТЬ_МОДЕЛИ>\\Деталь.m3d",
+  "cdw": "<АБС_ПУТЬ_ЧЕРТЕЖА>\\Деталь.cdw",
+  "format": 3,
+  "vertical": false,
+  "scale": "1:1",
+  "views": [
+    {"key": "front", "orient": "#Слева", "x": 40, "y": 215},
+    {"key": "top", "orient": "#Сверху", "x": 40, "y": 165}
+  ],
+  "dims": [
+    {"view": "front", "id": "L1", "kind": "lin", "side": "top",
+     "ref": {"type": "points", "p1": [0, 0, 9], "p2": [210, 0, 9]}},
+    {"view": "front", "id": "H", "kind": "lin", "side": "right",
+     "ref": {"type": "points", "p1": [210, 0, 0], "p2": [210, 0, 9]}},
+    {"view": "top", "id": "L", "kind": "lin", "side": "bottom",
+     "ref": {"type": "points", "p1": [0, -5, 0], "p2": [210, -5, 0]}},
+    {"view": "top", "id": "B", "kind": "lin", "side": "left",
+     "ref": {"type": "points", "p1": [0, -5, 0], "p2": [0, 5, 0]}},
+    {"view": "top", "id": "X1", "kind": "lin", "side": "bottom",
+     "ref": {"type": "points", "p1": [0, -5, 0], "p2": [52.5, 0, 0]}},
+    {"view": "top", "id": "P", "kind": "lin", "side": "bottom",
+     "ref": {"type": "points", "p1": [52.5, 0, 0], "p2": [157.5, 0, 0]}}
+  ],
+  "threads": [
+    {"view": "top", "id": "M", "ref": {"type": "circle", "center": [52.5, 0, 9], "d": 3.3},
+     "text": "2 отв. М4-6H"}
+  ],
+  "tt": [
+    "1. Неуказанные предельные отклонения размеров: H14, h14, ±IT14/2.",
+    "2. Острые кромки притупить 0,3...0,5 мм.",
+    "3. Поверхности без следов СОЖ, масел и заусенцев."
+  ],
+  "ra": "Ra 1,6",
+  "stamp": {}
+}

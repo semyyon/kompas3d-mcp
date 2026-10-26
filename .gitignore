@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+# runtime logs and caches written by the server
+logs/
+# local KOMPAS sandbox and generated output
+*.cdw
+*.m3d
+*.a3d
+*.draft.cdw
+# SDK material belongs to ASCON and must not be committed
+stubs/
+KOMPAS_SDK*.zip

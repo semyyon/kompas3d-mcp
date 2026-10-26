@@ -1,0 +1,1055 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "drawing_spec.schema.json",
+ "title": "drawing_spec — решения по чертежу детали для kompas_build_drawing",
+ "description": "LLM пишет только решения; где что стоит на листе, считает код. Координаты: x,y видов — бумажные мм (точка начала координат вида, как у D.new_drawing); line/center/at/shelf — координаты РОДИТЕЛЬСКОГО вида (мм модели в плоскости вида); ref размеров — формат kompas_place_dimensions. Семантика (ключи видов, файл модели, ряд масштабов) — server.validate_spec.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "model",
+  "cdw",
+  "format",
+  "scale",
+  "views"
+ ],
+ "properties": {
+  "model": {
+   "type": "string",
+   "pattern": "(?i)\\.(m3d|a3d)$",
+   "description": "абсолютный путь к модели"
+  },
+  "cdw": {
+   "type": "string",
+   "pattern": "(?i)\\.cdw$",
+   "description": "абсолютный путь чистового чертежа; черновик — <имя>.draft.cdw рядом"
+  },
+  "format": {
+   "enum": [
+    3,
+    4
+   ],
+   "description": "3 = А3, 4 = А4"
+  },
+  "format2": {
+   "enum": [
+    3,
+    4
+   ],
+   "description": "формат листа 2 (только при видах с sheet 2; по умолчанию = format, горизонтальный)"
+  },
+  "vertical": {
+   "type": "boolean"
+  },
+  "mass_grams": {
+   "type": "boolean",
+   "description": "масса в штампе в граммах (деталь < 5 г, иначе «0»); по умолчанию false — кг"
+  },
+  "scale": {
+   "type": "string",
+   "description": "масштаб листа из ряда ГОСТ 2.302 (project_rules.json:gost_2302_scales)"
+  },
+  "views": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "$ref": "#/$defs/view"
+   }
+  },
+  "dims": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/dim"
+   }
+  },
+  "threads": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/thread"
+   }
+  },
+  "leaders": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/leader"
+   }
+  },
+  "tt": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "minLength": 1
+   }
+  },
+  "ra": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "pattern": "^Ra \\d+(,\\d+)?$",
+   "description": "знак шероховатости; null — ЯВНЫЙ отказ от знака (решение 2026-10-15: Ч13 принимает по spec рядом с .cdw); нет поля — знак обязателен"
+  },
+  "stamp": {
+   "type": "object",
+   "additionalProperties": false,
+   "description": "явные значения ВСЕГДА перебивают графы 1/2/3, пришедшие из модели (свойства чертежа, модель не меняется): обозначение по шифру проекта, материал в ГОСТ-форме; не заданные — из модели. Масса — всегда из модели. company — графа 9 (организация), first_use — графа 25 «Перв. примен.» (дописываются пустыми)",
+   "properties": {
+    "marking": {
+     "type": "string"
+    },
+    "name": {
+     "type": "string"
+    },
+    "material": {
+     "type": "string"
+    },
+    "company": {
+     "type": "string",
+     "minLength": 1
+    },
+    "first_use": {
+     "type": "string",
+     "minLength": 1
+    }
+   }
+  },
+  "bases": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/base_sign"
+   }
+  },
+  "gdt": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/gdt"
+   }
+  },
+  "roughs": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/rough"
+   }
+  },
+  "intent": {
+   "type": "string",
+   "description": "путь утверждённой таблицы замысла (intent.json); spec от composer.py — проверка принимает её решения: общий Ra из spec (Ч13), Ø/М на изображении ступеней (Ч10)"
+  },
+  "ra_form": {
+   "enum": [
+    "radical",
+    "spec"
+   ],
+   "description": "форма общего знака Ra: radical — ручной радикал (закон Р21, умолч.); spec — штатный ISpecRough «√Ra … (√)», как в эталоне инженера (spec от composer по утверждённой таблице)"
+  },
+  "composer_notes": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "description": "заметки компоновщика (отступления подачи от таблицы: масштаб выносного и т.п.) — для отчёта"
+  }
+ },
+ "$defs": {
+  "num": {
+   "type": "number"
+  },
+  "xy": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "xyz": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 3,
+   "maxItems": 3
+  },
+  "key": {
+   "type": "string",
+   "minLength": 1
+  },
+  "sheet": {
+   "enum": [
+    1,
+    2
+   ],
+   "description": "лист вида (по умолчанию 1). Тесно — второй лист, а не уплотнение (Р05): x,y — бумажные мм СВОЕГО листа; разрез/выносной может стоять на листе 2 при родителе на листе 1. Лист 2 — штамп формы 2а; знак Ra и ТТ — только на листе 1"
+  },
+  "view": {
+   "type": "object",
+   "required": [
+    "key"
+   ],
+   "properties": {
+    "type": {
+     "enum": [
+      "section",
+      "detail"
+     ]
+    }
+   },
+   "if": {
+    "required": [
+     "type"
+    ]
+   },
+   "then": {
+    "if": {
+     "properties": {
+      "type": {
+       "const": "section"
+      }
+     }
+    },
+    "then": {
+     "$ref": "#/$defs/section"
+    },
+    "else": {
+     "$ref": "#/$defs/detail"
+    }
+   },
+   "else": {
+    "$ref": "#/$defs/orient_view"
+   }
+  },
+  "orient_view": {
+   "description": "вид модели: views[0] — главный; прочие — его проекции (AddStandartViews, код 3/4/5/6 по orient: сверху/снизу/слева/справа от главного), x,y — бумажная точка начала координат вида",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "key",
+    "orient",
+    "x",
+    "y"
+   ],
+   "properties": {
+    "key": {
+     "$ref": "#/$defs/key"
+    },
+    "orient": {
+     "enum": [
+      "#Спереди",
+      "#Сзади",
+      "#Сверху",
+      "#Снизу",
+      "#Слева",
+      "#Справа"
+     ]
+    },
+    "x": {
+     "$ref": "#/$defs/num"
+    },
+    "y": {
+     "$ref": "#/$defs/num"
+    },
+    "sheet": {
+     "$ref": "#/$defs/sheet"
+    },
+    "rotate": {
+     "enum": [
+      0,
+      90,
+      -90,
+      180
+     ],
+     "description": "поворот ГЛАВНОГО вида на листе без знака «повёрнуто» (ProjectionMatrix; длинная плита — горизонтально); только когда проекционных видов нет; refs размеров — по-прежнему точки модели"
+    },
+    "axes": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "h",
+       "v"
+      ]
+     },
+     "description": "принудительные оси симметрии вида через центр габарита (стиль 3, 3 мм за контур), когда авто-проверка зеркальности их не ставит (одно несимметричное отверстие на симметричной плите)"
+    },
+    "break": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+       "p1",
+       "p2"
+      ],
+      "properties": {
+       "p1": {
+        "$ref": "#/$defs/xyz"
+       },
+       "p2": {
+        "$ref": "#/$defs/xyz"
+       },
+       "gap": {
+        "type": "number",
+        "exclusiveMinimum": 0
+       }
+      }
+     },
+     "description": "разрыв главного вида по горизонтали (ГОСТ 2.305 п. 6.3): вырезать участок между точками МОДЕЛИ p1…p2 (их проекции по горизонтали вида), зазор gap мм листа (умолч. D.BREAK_GAP); размеры через разрыв — с text (номинал проверяется по модели)"
+    }
+   }
+  },
+  "section": {
+   "description": "разрез: секущая line в СК вида from (D.cutline) + ассоциативный вид (D.section_view); key «А-А»",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "key",
+    "type",
+    "from",
+    "line",
+    "x",
+    "y"
+   ],
+   "properties": {
+    "key": {
+     "$ref": "#/$defs/key"
+    },
+    "type": {
+     "const": "section"
+    },
+    "from": {
+     "$ref": "#/$defs/key"
+    },
+    "line": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/xy"
+     },
+     "minItems": 2,
+     "maxItems": 2
+    },
+    "x": {
+     "$ref": "#/$defs/num"
+    },
+    "y": {
+     "$ref": "#/$defs/num"
+    },
+    "scale": {
+     "type": "string",
+     "description": "по умолчанию — масштаб листа; иной — подпись «А-А (1:1)»"
+    },
+    "sheet": {
+     "$ref": "#/$defs/sheet"
+    },
+    "title_prefix": {
+     "$ref": "#/$defs/title_prefix"
+    },
+    "crop": {
+     "description": "обрезать разрез до местного вида: окружность center [x,y,z] — точка МОДЕЛИ (проецируется в СК разреза), r — радиус, мм модели (D.local_view); или прямоугольник rect [[x,y,z],[x,y,z]] — две угловые точки МОДЕЛИ (D.local_view_rect: прямой край по обрыву, секущая на всю длину — Вал_v7)",
+     "type": "object",
+     "additionalProperties": false,
+     "oneOf": [
+      {
+       "required": [
+        "center",
+        "r"
+       ]
+      },
+      {
+       "required": [
+        "rect"
+       ]
+      }
+     ],
+     "properties": {
+      "rect": {
+       "type": "array",
+       "items": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 3,
+        "maxItems": 3
+       },
+       "minItems": 2,
+       "maxItems": 2
+      },
+      "center": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 3
+      },
+      "r": {
+       "type": "number",
+       "exclusiveMinimum": 0
+      }
+     }
+    },
+    "wave": {
+     "description": "волнистая линия обрыва (ГОСТ 2.305, IWaveLine) по концу секущей: КОМПАС обрезает разрез концом секущей без линии границы. at — точка МОДЕЛИ на оси у конца (проецируется в СК разреза), half — полудлина линии поперёк оси, мм модели; линия перпендикулярна секущей",
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "at",
+      "half"
+     ],
+     "properties": {
+      "at": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 3
+      },
+      "half": {
+       "type": "number",
+       "exclusiveMinimum": 0
+      }
+     }
+    },
+    "axes": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "h",
+       "v"
+      ]
+     },
+     "description": "принудительные оси симметрии разреза через центр габарита (D.force_axes) — сечение симметрично, а КОМПАС оси не строит"
+    }
+   }
+  },
+  "title_prefix": {
+   "type": "string",
+   "minLength": 1,
+   "description": "текст перед буквой в заголовке вида («2 места» → «2 места А (1:5)», ГОСТ 2.305 — повторяющийся узел; счёт «N отв.» внутри — на один узел)"
+  },
+  "detail": {
+   "description": "выносной элемент: D.remote в виде from (center, r — мм модели в СК вида) + D.detail_view; x,y — бумажная точка ЦЕНТРА выносного; key — буква «Б». form rect — прямоугольная зона w×h (мм модели в СК from) вместо круга r",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "key",
+    "type",
+    "from",
+    "center",
+    "scale",
+    "x",
+    "y"
+   ],
+   "properties": {
+    "key": {
+     "$ref": "#/$defs/key"
+    },
+    "type": {
+     "const": "detail"
+    },
+    "from": {
+     "$ref": "#/$defs/key"
+    },
+    "center": {
+     "$ref": "#/$defs/xy"
+    },
+    "r": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "form": {
+     "enum": [
+      "circle",
+      "rect"
+     ],
+     "description": "граница зоны: круг r (умолч.) или прямоугольник w×h (эталон плиты: зоны Б 117×53 мм листа)"
+    },
+    "w": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "h": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "scale": {
+     "type": "string"
+    },
+    "x": {
+     "$ref": "#/$defs/num"
+    },
+    "y": {
+     "$ref": "#/$defs/num"
+    },
+    "sheet": {
+     "$ref": "#/$defs/sheet"
+    },
+    "shelf": {
+     "$ref": "#/$defs/xy",
+     "description": "точка полки буквы (IRemoteElement.ShelfX/Y) в СК вида from, мм модели; буква — вправо-вверх от неё. Без поля: справа-вверху на 5 мм листа за кругом, а если там контур/штриховка — код переносит букву (D.detail_shelf)"
+    },
+    "title_prefix": {
+     "$ref": "#/$defs/title_prefix"
+    }
+   }
+  },
+  "ref": {
+   "type": "object",
+   "required": [
+    "type"
+   ],
+   "properties": {
+    "type": {
+     "enum": [
+      "points",
+      "circle",
+      "view_points",
+      "pcd",
+      "rays",
+      "angle"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "points"
+       }
+      }
+     },
+     "then": {
+      "additionalProperties": false,
+      "required": [
+       "type",
+       "p1",
+       "p2"
+      ],
+      "properties": {
+       "type": {},
+       "p1": {
+        "$ref": "#/$defs/xyz"
+       },
+       "p2": {
+        "$ref": "#/$defs/xyz"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "view_points"
+       }
+      }
+     },
+     "then": {
+      "additionalProperties": false,
+      "required": [
+       "type",
+       "p1",
+       "p2"
+      ],
+      "properties": {
+       "type": {},
+       "p1": {
+        "$ref": "#/$defs/xy"
+       },
+       "p2": {
+        "$ref": "#/$defs/xy"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "circle"
+       }
+      }
+     },
+     "then": {
+      "additionalProperties": false,
+      "required": [
+       "type",
+       "center",
+       "d"
+      ],
+      "properties": {
+       "type": {},
+       "center": {
+        "$ref": "#/$defs/xyz"
+       },
+       "d": {
+        "type": "number",
+        "exclusiveMinimum": 0
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "pcd"
+       }
+      }
+     },
+     "then": {
+      "additionalProperties": false,
+      "required": [
+       "type",
+       "center",
+       "d"
+      ],
+      "description": "dia: окружность ЦЕНТРОВ группы отверстий (её в геометрии нет — ставится осевая окружность стиля 3 + Ø-размер); rays — точки модели (центры отверстий), через которые из center проводятся осевые лучи — опоры угловых размеров (ref rays, индексы в этом списке)",
+      "properties": {
+       "type": {},
+       "center": {
+        "$ref": "#/$defs/xyz"
+       },
+       "d": {
+        "type": "number",
+        "exclusiveMinimum": 0
+       },
+       "rays": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/xyz"
+        },
+        "minItems": 1
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "rays"
+       }
+      }
+     },
+     "then": {
+      "additionalProperties": false,
+      "required": [
+       "type",
+       "pcd",
+       "i1",
+       "i2"
+      ],
+      "description": "ang: угол между лучами i1 и i2 (индексы rays) размера-pcd с id «pcd» того же вида; против часовой от i1 к i2",
+      "properties": {
+       "type": {},
+       "pcd": {
+        "type": "string",
+        "minLength": 1
+       },
+       "i1": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "i2": {
+        "type": "integer",
+        "minimum": 0
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "angle"
+       }
+      }
+     },
+     "then": {
+      "additionalProperties": false,
+      "required": [
+       "type",
+       "center",
+       "p1",
+       "p2"
+      ],
+      "description": "ang: угол при вершине center (точка модели) между направлениями на p1 и p2 (точки модели): два осевых луча строятся сами",
+      "properties": {
+       "type": {},
+       "center": {
+        "$ref": "#/$defs/xyz"
+       },
+       "p1": {
+        "$ref": "#/$defs/xyz"
+       },
+       "p2": {
+        "$ref": "#/$defs/xyz"
+       }
+      }
+     }
+    }
+   ]
+  },
+  "tol": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "value"
+   ],
+   "description": "рамка допуска расположения/формы (ГОСТ Р 2.308) ПОД текстом этого размера, стрелка — на кромку элемента (эталон: «44 отв.Ø8» и под полкой «⊕ Ø0,5»). sign: pos (позиционный, умолч.) | flat | straight | round | cyl | par | perp | coax | номер спецзнака; value — число («0,5»); dia_sign — знак Ø перед значением (умолч. true у pos); base — буква базы; base — «А» или «А|Б|В» (столбцы рамки)",
+   "properties": {
+    "sign": {
+     "type": [
+      "string",
+      "integer"
+     ]
+    },
+    "value": {
+     "type": "string",
+     "pattern": "^[0-9]+([,.][0-9]+)?$"
+    },
+    "dia_sign": {
+     "type": "boolean"
+    },
+    "base": {
+     "type": "string",
+     "minLength": 1
+    },
+    "branch": {
+     "type": "boolean",
+     "description": "false — рамка под полкой без своей стрелки (полка выноски группы уже указывает на отверстие; стрелка рамки шла через контур и выноску — пилот .008)"
+    }
+   }
+  },
+  "dim": {
+   "description": "элемент kompas_place_dimensions + view (key вида)",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "view",
+    "kind",
+    "ref"
+   ],
+   "properties": {
+    "view": {
+     "$ref": "#/$defs/key"
+    },
+    "id": {
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "lin",
+      "dia",
+      "rad",
+      "ang"
+     ]
+    },
+    "ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "side": {
+     "enum": [
+      "top",
+      "bottom",
+      "left",
+      "right",
+      null
+     ]
+    },
+    "orient": {
+     "enum": [
+      "h",
+      "v",
+      null
+     ]
+    },
+    "angle": {
+     "type": "number"
+    },
+    "prefix": {
+     "type": "string",
+     "minLength": 1,
+     "description": "lin/dia: текст ПЕРЕД размером (Prefix размера), напр. «2 отв. » → «2 отв. Ø4,5»"
+    },
+    "suffix": {
+     "type": "string",
+     "minLength": 1,
+     "description": "lin/dia/rad: текст ПОСЛЕ размера (Suffix размера, не номинал), напр. «*» → «130*» — размер справочный (ГОСТ 2.307)"
+    },
+    "text": {
+     "type": "string",
+     "pattern": "^[0-9]+([,.][0-9]+)?$",
+     "description": "номинал вместо авто (округление координат модели с сотыми до десятых: «22,6» при 22,632); при сборке |text − измеренное| ≤ 0,05 мм, иначе ошибка dims:text_mismatch"
+    },
+    "round": {
+     "type": "boolean",
+     "description": "lin/dia/rad: авто-округлить номинал до десятых, если расхождение ≤ 0,05 мм (иначе ошибка dims:round — не молча); явный text важнее"
+    },
+    "frame": {
+     "type": "boolean",
+     "description": "рамка теоретически точного размера (ГОСТ Р 2.308) — координаты элементов с допуском расположения"
+    },
+    "square": {
+     "type": "boolean",
+     "description": "lin: знак «□» перед числом — квадратная сетка одинаковых отверстий"
+    },
+    "shift": {
+     "type": "number",
+     "description": "lin: вынести текст за выносную линию на |shift| мм листа: > 0 — за вторую точку (бóльшая координата), < 0 — за первую; для коротких пролётов"
+    },
+    "row": {
+     "type": "integer",
+     "minimum": 0,
+     "description": "lin: ряд лесенки не ближе заданного (0 — первый, 10 мм от контура, далее +8 мм): оставить место под полки выносок между контуром и размерной линией"
+    },
+    "radius": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "ang: радиус дуги размера, мм ЛИСТА (умолч. 18)"
+    },
+    "leg": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "dia: длина ножки от окружности до полки, мм ЛИСТА (умолч. 10) — чтобы вывести надпись за контур/зону (эталон: длинные выноски групп отверстий наружу плиты)"
+    },
+    "direction": {
+     "type": "boolean",
+     "description": "ang: дуга с другой стороны лучей"
+    },
+    "tol": {
+     "$ref": "#/$defs/tol"
+    },
+    "pos": {
+     "type": "number",
+     "description": "lin: положение размерной линии в СК вида (y для orient h, x для orient v) — задаёт компоновщик (composer.py); лесенка его не двигает; Ø на ступени вала — pos внутри контура"
+    },
+    "text_pos": {
+     "type": "number",
+     "description": "lin: IDimensionParams.TextPos — сдвиг текста вдоль размерной линии (0 — посередине); для Ø на ступени вала — увести текст с осевой"
+    },
+    "region": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 4,
+     "maxItems": 4,
+     "description": "служебное (ставит сборка): видимая область местного вида [x1,y1,x2,y2] СК вида — лесенка размеров от неё"
+    },
+    "text_at": {
+     "type": "number",
+     "description": "lin с pos: положение текста вдоль размерной линии в СК вида (y для orient v, x для h) — увести число Ø с осевой"
+    },
+    "shelf": {
+     "$ref": "#/$defs/xy",
+     "description": "lin: текст на полке с выноской, точка полки в СК вида (узкая ступень вала — «выноской», ГОСТ 2.307)"
+    },
+    "dev": {
+     "type": "string",
+     "pattern": "^(±[0-9]+([,.][0-9]+)?|[+-]?[0-9]+([,.][0-9]+)?(/[+-]?[0-9]+([,.][0-9]+)?)?)$",
+     "description": "предельные отклонения индексами (ГОСТ 2.307 п. 1.9): «+0,2», «-0,1», «±0,05», «+0,2/-0,1»; IDimensionText.DeviationOn + High/LowDeviation (D.set_deviations)"
+    }
+   }
+  },
+  "thread": {
+   "description": "обозначение резьбы диаметральным размером по окружности отверстия (номинал заменяется текстом, без знака Ø). Латинские M/x и точка в шаге нормализуются в «М»/«х»/запятую. Глухая резьба (ГОСТ 2.311, правило Г16): depth — глубина резьбы, drill_d + drill_depth — сверление → «М4-6H↧8 / Ø3,3↧11»",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "view",
+    "ref",
+    "text"
+   ],
+   "properties": {
+    "view": {
+     "$ref": "#/$defs/key"
+    },
+    "id": {
+     "type": "string"
+    },
+    "ref": {
+     "$ref": "#/$defs/ref"
+    },
+    "text": {
+     "type": "string",
+     "pattern": "^(\\d+ отв\\. )?[МM]\\d+([,.]\\d+)?([xх]\\d+([,.]\\d+)?)?-\\d[HGhg]$"
+    },
+    "depth": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "глубина резьбы, мм (↧)"
+    },
+    "drill_d": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Ø сверления под резьбу, мм"
+    },
+    "drill_depth": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "глубина сверления, мм (не меньше depth)"
+    },
+    "angle": {
+     "type": "number"
+    }
+   }
+  },
+  "leader": {
+   "description": "линия-выноска: at — стрелка ([x,y] СК вида или [x,y,z] точка модели), shelf — полка в СК вида (по умолчанию над видом выше лесенки размеров side=top: 10 + 8·n мм листа)",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "view",
+    "at",
+    "text"
+   ],
+   "properties": {
+    "view": {
+     "$ref": "#/$defs/key"
+    },
+    "at": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 3
+    },
+    "text": {
+     "type": "string",
+     "minLength": 1
+    },
+    "shelf": {
+     "$ref": "#/$defs/xy"
+    },
+    "under": {
+     "type": "string",
+     "minLength": 1,
+     "description": "текст под полкой"
+    },
+    "arrow": {
+     "enum": [
+      "arrow",
+      "dot",
+      "none"
+     ],
+     "description": "конец выноски: стрелка (умолч.), точка на поверхности («s 10» — толщина плоской детали, ГОСТ 2.307) или без"
+    }
+   }
+  },
+  "base_sign": {
+   "description": "знак базы (ГОСТ 2.308): at — треугольник ([x,y] СК вида или [x,y,z] точка модели) на поверхности/продолжении размерной линии, frame — рамка с буквой в СК вида",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "view",
+    "at",
+    "frame",
+    "letter"
+   ],
+   "properties": {
+    "view": {
+     "$ref": "#/$defs/key"
+    },
+    "at": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 3
+    },
+    "frame": {
+     "$ref": "#/$defs/xy"
+    },
+    "letter": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 3
+    }
+   }
+  },
+  "gdt": {
+   "description": "рамка допуска формы/расположения на выноске (ГОСТ 2.308): стрелка at ([x,y] СК вида или [x,y,z] точка модели) на поверхность, frame — точка рамки в СК вида (ножка выходит из правого/левого края по base_pos); sign: runout (биение ↗), runout_total, cyl, round, perp, par, coax, pos, flat, straight",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "view",
+    "at",
+    "frame",
+    "sign",
+    "value"
+   ],
+   "properties": {
+    "view": {
+     "$ref": "#/$defs/key"
+    },
+    "at": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 3
+    },
+    "frame": {
+     "$ref": "#/$defs/xy"
+    },
+    "sign": {
+     "type": [
+      "string",
+      "integer"
+     ]
+    },
+    "value": {
+     "type": "string",
+     "pattern": "^[0-9]+([,.][0-9]+)?$"
+    },
+    "dia_sign": {
+     "type": "boolean"
+    },
+    "base": {
+     "type": "string",
+     "minLength": 1
+    },
+    "base_pos": {
+     "type": "integer",
+     "description": "угол рамки в точке frame (ksTablePointEnum: 1 левый низ, 3 левый верх, 5 правый верх, 6 правый центр, 7 правый низ); умолч. 6"
+    }
+   }
+  },
+  "rough": {
+   "description": "знак шероховатости поверхности (ГОСТ 2.309): вершина at на линии поверхности ([x,y] СК вида или [x,y,z] точка модели), знак вверх; с shelf — знак на полке линии-выноски (ГОСТ 2.309 п. 2.4): стрелка в at на поверхности, полка от точки shelf вправо (shelf правее at) или влево",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "view",
+    "at",
+    "ra"
+   ],
+   "properties": {
+    "view": {
+     "$ref": "#/$defs/key"
+    },
+    "at": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 3
+    },
+    "ra": {
+     "type": "string",
+     "pattern": "^[0-9]+([,.][0-9]+)?$"
+    },
+    "shelf": {
+     "$ref": "#/$defs/xy",
+     "description": "точка полки (конец выноски) в СК вида, мм модели"
+    }
+   }
+  }
+ }
+}
